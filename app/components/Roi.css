@@ -1,0 +1,17 @@
+.parent {
+  border: 2px black solid;
+  margin-bottom: 10px;
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.parent img {
+  margin-right: 50px;
+}
+
+.infos select {
+  width: 250px;
+  margin-bottom: 20px;
+}
