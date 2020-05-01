@@ -59,15 +59,18 @@ export default class Segmentation extends Component<props, state> {
   };
 
   showSegmentationResults = () => {
-    let srcs: string[] = [];
+    let srcs: {
+      [id: string]: string;
+    }[] = [];
     const { nbRois } = this.state;
     if (nbRois === 0) return <h2>Aucune masse trouvée</h2>;
     for (let i = 0; i < nbRois; i += 1)
       srcs = [
         ...srcs,
-        `python/rois/roi_${i}_contours_upscaled.png?version=${Math.floor(
-          1000000000 * Math.random()
-        )}`
+        {
+          contoursUpscaled: `python/rois/roi_${i}_contours_upscaled.png`,
+          simpleRoi: `app/python/rois/roi_${i}.png`
+        }
       ];
     const message = `${nbRois}${
       nbRois > 1 ? ` masses trouvées` : ` seule masse trouvée`
@@ -90,7 +93,10 @@ export default class Segmentation extends Component<props, state> {
           return (
             // eslint-disable-next-line react/no-array-index-key
             <div key={ind}>
-              <Roi src={val} />
+              <Roi
+                contoursUpscaled={val.contoursUpscaled}
+                simpleRoi={val.simpleRoi}
+              />
               <br />
             </div>
           );
@@ -108,14 +114,6 @@ export default class Segmentation extends Component<props, state> {
           if (!segmentationDone)
             return (
               <div>
-                <br />
-                <br />
-                <br />
-                <br />
-                <br />
-                <br />
-                <br />
-                <br />
                 <br />
                 <h2>Veuillez attendre la segmentation automatique..</h2>
               </div>
