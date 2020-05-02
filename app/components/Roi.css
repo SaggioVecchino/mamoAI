@@ -1,7 +1,10 @@
-.parent {
+.container {
   border: 2px black solid;
   margin-bottom: 10px;
   padding: 10px;
+}
+
+.parent {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -22,4 +25,17 @@
 
 .malignant {
   border: 2px red solid;
+}
+
+.roisAlikeContainer {
+  margin-top: 10px;
+  /* border: 1px solid black; */
+  padding: 5px;
+}
+
+.roisAlike {
+  display: flex;
+  align-items: center;
+  justify-content: space-evenly;
+  flex-wrap: wrap;
 }

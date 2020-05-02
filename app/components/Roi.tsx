@@ -1,34 +1,47 @@
 import React, { Component } from 'react';
 import classNames from 'classnames';
 import { PythonShell } from 'python-shell';
+import RoiAlike from './RoiAlike';
 import styles from './Roi.css';
 
 type props = { contoursUpscaled: string; simpleRoi: string };
 
 type margin =
   | 'OBSCURED'
+  | 'MICROLOBULATED'
   | 'ILL_DEFINED'
   | 'CIRCUMSCRIBED'
-  | 'MICROLOBULATED'
   | 'SPICULATED';
 
 type shape =
+  | 'OVAL'
+  | 'IRREGULAR'
   | 'LOBULATED'
-  | 'FOCAL_ASYMMETRIC_DENSITY ROUND'
-  | 'LYMPH_NODE'
-  | 'ASYMMETRIC_BREAST_TISSUE'
+  | 'ROUND'
   | 'ARCHITECTURAL_DISTORTION'
-  | 'IRREGULAR, OVAL';
+  | 'FOCAL_ASYMMETRIC_DENSITY'
+  | 'ASYMMETRIC_BREAST_TISSUE'
+  | 'LYMPH_NODE';
 
 type subtility = 0 | 1 | 2 | 3 | 4 | 5;
 
-type diagnosis = 'BENIGN' | 'MALIGNANT';
+type diagnosis = 'BENIGN' | 'MALIGNANT' | 'waiting';
 
 type state = {
   margin: margin;
   shape: shape;
   subtility: subtility;
+  marginDiagnosed: margin;
+  shapeDiagnosed: shape;
+  subtilityDiagnosed: subtility;
+  asm: number;
+  dissimilarity: number;
+  energy: number;
   diagnosis: diagnosis;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  bestCases: [{ [id: string]: any }];
+  confirmed: boolean;
+  corrected: boolean;
 };
 
 export default class Roi extends Component<props, state> {
@@ -37,11 +50,6 @@ export default class Roi extends Component<props, state> {
   constructor(props: props) {
     super(props);
     this.exited = false;
-  }
-
-  componentDidUpdate() {
-    // eslint-disable-next-line no-console
-    console.log(this.state);
   }
 
   componentWillUnmount() {
@@ -58,7 +66,19 @@ export default class Roi extends Component<props, state> {
   }
 
   get diagnosed() {
-    return this.state && 'diagnosis' in this.state;
+    if (this.state && 'diagnosis' in this.state) {
+      const { diagnosis } = this.state;
+      return diagnosis !== 'waiting';
+    }
+    return false;
+  }
+
+  get isWaiting() {
+    if (this.state && 'diagnosis' in this.state) {
+      const { diagnosis } = this.state;
+      return diagnosis === 'waiting';
+    }
+    return false;
   }
 
   get isBenign() {
@@ -73,12 +93,81 @@ export default class Roi extends Component<props, state> {
     return diagnosis === 'MALIGNANT';
   }
 
-  get parentStyle() {
+  get diagnosisStyle() {
     const classnames: { [id: string]: boolean } = {};
-    classnames[styles.parent] = true;
+    classnames[styles.container] = true;
     classnames[styles.benign] = this.isBenign;
     classnames[styles.malignant] = this.isMalignant;
     return classNames(classnames);
+  }
+
+  get isConfirmed() {
+    if (this.state && 'confirmed' in this.state) {
+      const { confirmed } = this.state;
+      return confirmed;
+    }
+    return false;
+  }
+
+  get isCorrected() {
+    if (this.state && 'corrected' in this.state) {
+      const { corrected } = this.state;
+      return corrected;
+    }
+    return false;
+  }
+
+  get roiInfos() {
+    if (!this.diagnosed) return `Non encore diagnostiquée`;
+    const {
+      marginDiagnosed,
+      shapeDiagnosed,
+      subtilityDiagnosed,
+      asm,
+      dissimilarity,
+      energy,
+      diagnosis
+    } = this.state;
+    return `****Vous avez jugé:\nBordure: ${marginDiagnosed}\nForme: ${shapeDiagnosed}\nSubtilité: ${subtilityDiagnosed}\n****Caractéristiques de texture calculées automatiquement\nASM: ${asm}\nDissimilarité: ${dissimilarity}\nEnergie: ${energy}\n\n----** DIAGNOSTIQUE: ${
+      diagnosis === 'BENIGN' ? 'TUMEUR BENIGNE' : 'TUMEUR MALIGNE'
+    } **----`;
+  }
+
+  get waitingMessage() {
+    if (!this.isWaiting) return ``;
+    return (
+      <span>
+        {(() => {
+          return (
+            <div>
+              {(() => {
+                return `Veuillez attendre un petit instant s'il vous plaît`;
+              })()}
+            </div>
+          );
+        })()}
+      </span>
+    );
+  }
+
+  get roisAlike() {
+    const { bestCases } = this.state;
+    return bestCases.map(val => {
+      return (
+        <RoiAlike
+          similarity={val.similarity}
+          margin={val.case.margin}
+          shape={val.case.shape}
+          subtility={val.case.subtility}
+          dissimilarity={val.case.dissimilarity}
+          energy={val.case.energy}
+          asm={val.case.ASM}
+          diagnosis={val.case.pathology}
+          roi={val.case.roi}
+          key={val.case.roi}
+        />
+      );
+    });
   }
 
   marginChanged = (event: React.ChangeEvent<HTMLSelectElement>) => {
@@ -90,14 +179,64 @@ export default class Roi extends Component<props, state> {
   };
 
   subtilityChanged = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    this.setState({ subtility: parseInt(event.target.value, 10) as subtility });
+    this.setState({
+      subtility: parseInt(event.target.value, 10) as subtility
+    });
+  };
+
+  expertDiagnose = async (diagnosis: diagnosis) => {
+    const {
+      marginDiagnosed,
+      shapeDiagnosed,
+      subtilityDiagnosed,
+      asm,
+      dissimilarity,
+      energy
+    } = this.state;
+
+    const { simpleRoi } = this.props;
+
+    // implicit await
+    PythonShell.run(
+      'app/python/cbr.py',
+      {
+        args: [
+          'update',
+          marginDiagnosed,
+          shapeDiagnosed,
+          `${subtilityDiagnosed}`,
+          `${asm}`,
+          `${dissimilarity}`,
+          `${energy}`,
+          simpleRoi,
+          diagnosis
+        ]
+      },
+      err => {
+        if (this.exited) return;
+        if (err) {
+          throw err;
+        }
+      }
+    );
+  };
+
+  confirm = async () => {
+    const { diagnosis } = this.state;
+    await this.expertDiagnose(diagnosis);
+    this.setState({ confirmed: true });
+  };
+
+  correct = async () => {
+    const diagnosis = (this.isBenign ? 'MALIGNANT' : 'BENIGN') as diagnosis;
+    await this.expertDiagnose(diagnosis);
+    this.setState({ corrected: true });
   };
 
   diagnose = async () => {
+    this.setState({ diagnosis: 'waiting' });
     const { margin, shape, subtility } = this.state;
     const { simpleRoi } = this.props;
-    // eslint-disable-next-line no-console
-    console.log('Calling Python now..');
     // implicit await
     PythonShell.run(
       'app/python/cbr.py',
@@ -107,15 +246,22 @@ export default class Roi extends Component<props, state> {
       (err, results) => {
         if (this.exited) return;
         if (err) {
-          // eslint-disable-next-line no-console
-          console.log(err);
           throw err;
         }
         if (results) {
-          const resultPython: { [id: string]: string } = JSON.parse(results[0]);
-          // eslint-disable-next-line no-console
-          console.log(resultPython);
-          this.setState({ diagnosis: resultPython.diagnosis as diagnosis });
+          const resultPython = JSON.parse(results[0]);
+          this.setState({
+            asm: resultPython.case.ASM,
+            dissimilarity: resultPython.case.dissimilarity,
+            energy: resultPython.case.energy,
+            shapeDiagnosed: resultPython.case.shape,
+            marginDiagnosed: resultPython.case.margin,
+            subtilityDiagnosed: resultPython.case.subtility,
+            diagnosis: resultPython.diagnosis as diagnosis,
+            bestCases: resultPython.bestCases,
+            confirmed: false,
+            corrected: false
+          });
         }
       }
     );
@@ -124,9 +270,10 @@ export default class Roi extends Component<props, state> {
   render() {
     const { contoursUpscaled } = this.props;
     return (
-      <div>
-        <div className={this.parentStyle}>
+      <div className={this.diagnosisStyle}>
+        <div className={styles.parent}>
           <img
+            title={this.roiInfos}
             alt="roi_image"
             src={`${contoursUpscaled}?version=${Math.floor(
               1000000000 * Math.random()
@@ -167,19 +314,19 @@ export default class Roi extends Component<props, state> {
                     -- select an option --
                   </option>
                   <option value="LOBULATED">LOBULATED</option>
-                  <option value=" FOCAL_ASYMMETRIC_DENSITY">
+                  <option value="FOCAL_ASYMMETRIC_DENSITY">
                     FOCAL_ASYMMETRIC_DENSITY
                   </option>
-                  <option value="ROUND"> ROUND</option>
-                  <option value="LYMPH_NODE"> LYMPH_NODE</option>
+                  <option value="ROUND">ROUND</option>
+                  <option value="LYMPH_NODE">LYMPH_NODE</option>
                   <option value="ASYMMETRIC_BREAST_TISSUE">
                     ASYMMETRIC_BREAST_TISSUE
                   </option>
                   <option value="ARCHITECTURAL_DISTORTION">
                     ARCHITECTURAL_DISTORTION
                   </option>
-                  <option value="IRREGULAR"> IRREGULAR</option>
-                  <option value="OVAL"> OVAL</option>
+                  <option value="IRREGULAR">IRREGULAR</option>
+                  <option value="OVAL">OVAL</option>
                 </select>
               </label>
               <br />
@@ -204,16 +351,43 @@ export default class Roi extends Component<props, state> {
                 </select>
               </label>
               <br />
-              <button
-                type="button"
-                disabled={!this.submittable}
-                onClick={this.diagnose}
-              >
-                Diagnostiquer
-              </button>
+              <div>
+                <button
+                  type="button"
+                  disabled={!this.submittable || this.isWaiting}
+                  onClick={this.diagnose}
+                >
+                  Diagnostiquer
+                </button>
+                {this.waitingMessage}
+              </div>
             </span>
           </div>
         </div>
+        {(() => {
+          if (this.diagnosed)
+            return (
+              <div className={styles.roisAlikeContainer}>
+                <h1>Masses similaires dans la base de données</h1>
+                <div className={styles.roisAlike}>{this.roisAlike}</div>
+                <button
+                  type="button"
+                  disabled={this.isConfirmed || this.isCorrected}
+                  onClick={this.confirm}
+                >
+                  Confirmer le diagnostique
+                </button>
+                <button
+                  type="button"
+                  disabled={this.isConfirmed || this.isCorrected}
+                  onClick={this.correct}
+                >
+                  Corriger le diagnostique
+                </button>
+              </div>
+            );
+          return <div />;
+        })()}
       </div>
     );
   }

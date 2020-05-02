@@ -46,7 +46,7 @@ def apply_contours(image):
     xmin, ymin, xmax, ymax = get_coordinates(rect)
     cv.imwrite(os.path.join(ROOT, 'rois', 'roi_'+str(i)+'.png'), crop_image(image.copy(), xmin, ymin, xmax, ymax, margin = margin))
     contoured = crop_image(image_with_contours.copy(), xmin, ymin, xmax, ymax, margin = margin)
-    scale = 1.5
+    scale = 2
     contoured_upscaled = cv.resize(contoured, (int(contoured.shape[1]*scale),int(contoured.shape[0]*scale)), cv.INTER_AREA)
     cv.imwrite(os.path.join(ROOT, 'rois', 'roi_'+str(i)+'_contours_upscaled.png'), contoured_upscaled)
     cv.rectangle(image, (xmin, ymin), (xmax, ymax), (0, 0, 255), 1)

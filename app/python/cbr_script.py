@@ -36,6 +36,19 @@ class NoSuchIDInDBException(Exception):
   pass
 
 
+import json
+
+METRICS_PATH = "app/python/metrics.json"
+
+def load_metrics():
+  with open(METRICS_PATH, 'r') as f:
+    metrics = json.loads(f.read())
+  return metrics
+
+def save_metrics(metrics):
+  with open(METRICS_PATH, 'w') as f:
+    f.write(json.dumps(metrics))
+
 DB_PATH = "app/python/cbr.db"
 K = 7
 TYPES = {'INTEGER':'int', 'FLOAT':'float', 'STRING':'str', 'INTERVAL_INTEGER':'int',
@@ -177,12 +190,26 @@ def addCaseToDB(case, updateInfos=False, persist=False):
           infosInDB['minInDB'] = caseToAdd[key]
         if caseToAdd[key] > infosInDB['maxInDB']:
           infosInDB['maxInDB'] = caseToAdd[key]
+  metrics = load_metrics()
+
+  if case['pathology'] == 'MALIGNANT':
+    metrics['MALIGNANT']+=1
+  else:
+    metrics['BENIGN']+=1
+  save_metrics(metrics)
   if persist:
     saveDB()
 
 def deleteCaseFromDB(id_, updateInfos=False, persist=False):
   if id_ not in DB['cases']:
     raise NoSuchIDInDBExcetpion('ID:{} not present in DB'.format(id_))
+
+  metrics = load_metrics()
+  if readCase(id_)['pathology'] == 'MALIGNANT':
+    metrics['MALIGNANT']-=1
+  else:
+    metrics['BENIGN']-=1
+  save_metrics(metrics)
 
   del DB['cases'][id_]
   del DB['infos']['cases'][id_]
@@ -207,7 +234,6 @@ def deleteCaseFromDB(id_, updateInfos=False, persist=False):
         DB['infos']['result']['minInDB'] = DB['cases'][case_id][DB['config']['result']['name']]
       if DB['cases'][case_id][DB['config']['result']['name']] > DB['infos']['result']['maxInDB']:
         DB['infos']['result']['maxInDB'] = DB['cases'][case_id][DB['config']['result']['name']]
-
   if persist:
     saveDB()
 
@@ -296,7 +322,7 @@ def deleteWorst(nbCases=None, updateInfos=False, reinitInfos=False, persist=Fals
   alpha = .2
   for caseId in DB['cases']:
     if DB['infos']['cases'][caseId]['used_in_similarity'] > c0:#to be able to judge
-      if DB['infos']['cases'][caseId]['same_in_similarity'] > c1 and DB['infos']['cases'][caseId]['different_in_similarity'] > c2:
+      if (DB['infos']['cases'][caseId]['same_in_similarity'] > c1 and DB['infos']['cases'][caseId]['different_in_similarity'] > c2):
         weights[caseId] = (alpha*DB['infos']['cases'][caseId]['sum_same']/DB['infos']['cases'][caseId]['same_in_similarity']
                          -(1-alpha)*DB['infos']['cases'][caseId]['sum_different']/DB['infos']['cases'][caseId]['different_in_similarity']
                          )/DB['infos']['cases'][caseId]['used_in_similarity']
@@ -327,6 +353,7 @@ def topK(case, k=K, updateInfos=False, persist=False, expert=False):
     similarities[caseId] = similarity(case, caseId, updateInfos=updateInfos, expert=expert, persist=False)
   if updateInfos and persist:
     saveDB()
+
   return list(sorted(similarities.items(), key = lambda kv:(kv[1], kv[0]), reverse=True))[:k]
 
 def classify(case, k=K, updateInfos=False, expert=False, persist=False):
@@ -336,5 +363,5 @@ def classify(case, k=K, updateInfos=False, expert=False, persist=False):
     output = output_classes[DB['cases'][t[0]][DB['config']['result']['name']]]
     output['sum'] += t[1]
     output['counter'] += 1
-  return list({k: v for k, v in sorted(output_classes.items(), key=lambda item: (item[1]['counter'], item[1]['sum']), reverse=True)}.keys())[0]
-
+  diagnosis = list({k: v for k, v in sorted(output_classes.items(), key=lambda item: (item[1]['counter'], item[1]['sum']), reverse=True)}.keys())[0]
+  return diagnosis, top

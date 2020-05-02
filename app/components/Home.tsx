@@ -1,5 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { Component } from 'react';
 import { Link } from 'react-router-dom';
+import fs from 'fs';
 import routes from '../constants/routes.json';
 import styles from './Home.css';
 
@@ -7,15 +9,30 @@ type State = {
   input: any;
   preview: any;
   path: string;
+  VP: number;
+  VN: number;
+  FP: number;
+  FN: number;
+  MALIGNANT: number;
+  BENIGN: number;
 };
 
 export default class Home extends Component<{}, State> {
   constructor(props: {}) {
     super(props);
+    const metrics = JSON.parse(
+      fs.readFileSync('app/python/metrics.json', 'utf8')
+    );
     this.state = {
       input: null,
       preview: null,
-      path: ''
+      path: '',
+      VP: metrics.VP,
+      VN: metrics.VN,
+      FP: metrics.FP,
+      FN: metrics.FN,
+      MALIGNANT: metrics.MALIGNANT,
+      BENIGN: metrics.BENIGN
     };
   }
 
@@ -30,9 +47,9 @@ export default class Home extends Component<{}, State> {
     const { path } = this.state;
     if (path === '')
       return (
-        <span>
+        <h3>
           Veuillez choisir la mammographie avant de procéder à la segmentation
-        </span>
+        </h3>
       );
     return (
       <div>
@@ -46,6 +63,24 @@ export default class Home extends Component<{}, State> {
         </Link>
       </div>
     );
+  }
+
+  get recall() {
+    const { VP, FN } = this.state;
+    if (VP + FN === 0) return `NaN`;
+    return `${((100 * VP) / (VP + FN)).toFixed(2)}%`;
+  }
+
+  get precision() {
+    const { VP, FP } = this.state;
+    if (VP + FP === 0) return `NaN`;
+    return `${((100 * VP) / (VP + FP)).toFixed(2)}%`;
+  }
+
+  get accuracy() {
+    const { VP, VN, FP, FN } = this.state;
+    if (VP + VN + FP + FN === 0) return `NaN`;
+    return `${((100 * (VP + VN)) / (VP + VN + FP + FN)).toFixed(2)}%`;
   }
 
   updateImageDisplay = () => {
@@ -110,8 +145,56 @@ export default class Home extends Component<{}, State> {
   };
 
   render() {
+    const { VP, VN, FP, FN, MALIGNANT, BENIGN } = this.state;
     return (
       <div>
+        <div className={styles.infos}>
+          <h1>Quelques informations :</h1>
+          <b>Nombre de tumeurs bénignes:</b>
+          {(() => {
+            return ` ${BENIGN}`;
+          })()}
+          <br />
+          <b>Nombre de tumeurs malignes:</b>
+          {(() => {
+            return ` ${MALIGNANT}`;
+          })()}
+          <br />
+          <b>VP:</b>
+          {(() => {
+            return ` ${VP}`;
+          })()}
+          <br />
+          <b>VN:</b>
+          {(() => {
+            return ` ${VN}`;
+          })()}
+          <br />
+          <b>FP:</b>
+          {(() => {
+            return ` ${FP}`;
+          })()}
+          <br />
+          <b>FN:</b>
+          {(() => {
+            return ` ${FN}`;
+          })()}
+          <br />
+          <b>
+            Recall:
+            {` ${this.recall}`}
+          </b>
+          <br />
+          <b>
+            Precision:
+            {` ${this.precision}`}
+          </b>
+          <br />
+          <b>
+            Accuracy:
+            {` ${this.accuracy}`}
+          </b>
+        </div>
         {this.MyLinkSeg}
         <br />
         <label htmlFor="image_uploads">

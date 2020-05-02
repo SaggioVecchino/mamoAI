@@ -4,13 +4,16 @@
  */
 @import '~@fortawesome/fontawesome-free/css/all.css';
 
+@import url('https://fonts.googleapis.com/css2?family=Raleway:wght@700&display=swap');
+
 body {
   position: relative;
   color: white;
   height: 100vh;
   background-color: #232c39;
   color: white;
-  font-family: Arial, Helvetica, Helvetica Neue, serif;
+  /* font-family: Arial, Helvetica, Helvetica Neue, serif; */
+  font-family: 'Raleway', sans-serif;
   overflow-y: scroll;
   text-align: center;
 }
