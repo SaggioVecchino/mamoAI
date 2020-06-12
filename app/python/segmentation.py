@@ -72,8 +72,15 @@ def predic_mask(image_path):
       transform_img = transforms.Compose([transforms.ToTensor(), transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
       return transform_img(image)
     image_read = cv.imread(image_path, 1)
-    image = preprocessing(image_read)
-    x_tensor = torch.from_numpy(image.numpy()).type(torch.FloatTensor).to(DEVICE).unsqueeze(0)
+    image_read = cv.cvtColor(image_read, cv.COLOR_BGR2GRAY)
+    image_read = cv.split(cv.cvtColor(cv.cvtColor(image_read, cv.COLOR_GRAY2BGR), cv.COLOR_BGR2LAB))[0]
+    clahe = cv.createCLAHE()
+    image_read = clahe.apply(image_read)
+    image_read = cv.cvtColor(image_read, cv.COLOR_GRAY2BGR)
+    image_read = cv.medianBlur(image_read, 3)
+    image_read = cv.resize(image_read, dsize=(256, 512))
+    image_ = preprocessing(image_read)
+    x_tensor = torch.from_numpy(image_.numpy()).type(torch.FloatTensor).to(DEVICE).unsqueeze(0)
     model = torch.load(os.path.join(ROOT, 'vgg13_full.pth'), map_location=torch.device(DEVICE))
     model = model.to(DEVICE)
     pr_mask = model.predict(x_tensor)
@@ -81,11 +88,6 @@ def predic_mask(image_path):
     pr_mask = np.where(pr_mask>.5, 1, 0)*255
     cv.imwrite(os.path.join(ROOT, 'pr_mask.png'), pr_mask)
     image_with_contours = apply_contours(image_read.copy())
-    # visualize(
-    #   image = image_read,
-    #   predicted_mask = pr_mask,
-    #   image_with_contours = image_with_contours
-    # )
 
 def main(args):
     data = {'path': args[0]}

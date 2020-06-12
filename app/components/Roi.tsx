@@ -118,7 +118,7 @@ export default class Roi extends Component<props, state> {
   }
 
   get roiInfos() {
-    if (!this.diagnosed) return `Non encore diagnostiquée`;
+    if (!this.diagnosed) return `Pas encore diagnostiquée`;
     const {
       marginDiagnosed,
       shapeDiagnosed,
@@ -274,7 +274,7 @@ export default class Roi extends Component<props, state> {
         <div className={styles.parent}>
           <img
             title={this.roiInfos}
-            alt="roi_image"
+            alt={`${contoursUpscaled}`}
             src={`${contoursUpscaled}?version=${Math.floor(
               1000000000 * Math.random()
             )}`}

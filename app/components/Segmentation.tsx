@@ -68,7 +68,9 @@ export default class Segmentation extends Component<props, state> {
       srcs = [
         ...srcs,
         {
-          contoursUpscaled: `python/rois/roi_${i}_contours_upscaled.png`,
+          contoursUpscaled: `file://${__dirname}/${
+            process.env.NODE_ENV === 'production' ? 'app/' : ''
+          }python/rois/roi_${i}_contours_upscaled.png`,
           simpleRoi: `app/python/rois/roi_${i}.png`
         }
       ];
@@ -80,10 +82,16 @@ export default class Segmentation extends Component<props, state> {
         <h3>{message}</h3>
         <h5>Masque global :</h5>
         <img
-          src={`python/image_with_contours.png?version=${Math.floor(
+          src={`file://${__dirname}/${
+            process.env.NODE_ENV === 'production' ? 'app/' : ''
+          }python/image_with_contours.png?version=${Math.floor(
             1000000000 * Math.random()
           )}`}
-          alt="image_with_contours"
+          alt={`file://${__dirname}/${
+            process.env.NODE_ENV === 'production' ? 'app/' : ''
+          }python/image_with_contours.png?version=${Math.floor(
+            1000000000 * Math.random()
+          )}`}
         />
         {(() => {
           if (nbRois > 1) return <h5>Masses :</h5>;

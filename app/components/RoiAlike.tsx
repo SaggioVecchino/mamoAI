@@ -43,7 +43,10 @@ export default class RoiAlike extends Component<props, {}> {
 
   get srcOfROI() {
     const { roi } = this.props;
-    return `python/rois_db/${roi}`;
+    // eslint-disable-next-line no-console
+    return `file://${__dirname}/${
+      process.env.NODE_ENV === 'production' ? 'app/' : ''
+    }python/rois_db/${roi}`;
   }
 
   get isBenign() {
@@ -81,7 +84,7 @@ export default class RoiAlike extends Component<props, {}> {
       <span>
         <img
           src={this.srcOfROI}
-          alt="roi"
+          alt={this.srcOfROI}
           className={this.diagnosisStyle}
           title={this.roiInfo}
         />
