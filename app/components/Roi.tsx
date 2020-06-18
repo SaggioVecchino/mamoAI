@@ -128,7 +128,7 @@ export default class Roi extends Component<props, state> {
       energy,
       diagnosis
     } = this.state;
-    return `****Vous avez jugé:\nBordure: ${marginDiagnosed}\nForme: ${shapeDiagnosed}\nSubtilité: ${subtilityDiagnosed}\n****Caractéristiques de texture calculées automatiquement\nASM: ${asm}\nDissimilarité: ${dissimilarity}\nEnergie: ${energy}\n\n----** DIAGNOSTIQUE: ${
+    return `****Vous avez jugé:\nBordure: ${marginDiagnosed}\nForme: ${shapeDiagnosed}\nSubtilité: ${subtilityDiagnosed}\n****Caractéristiques de texture calculées automatiquement\nASM: ${asm}\nDissimilarité: ${dissimilarity}\nEnergie: ${energy}\n\n----** DIAGNOSTIC: ${
       diagnosis === 'BENIGN' ? 'TUMEUR BENIGNE' : 'TUMEUR MALIGNE'
     } **----`;
   }
@@ -375,14 +375,14 @@ export default class Roi extends Component<props, state> {
                   disabled={this.isConfirmed || this.isCorrected}
                   onClick={this.confirm}
                 >
-                  Confirmer le diagnostique
+                  Confirmer le diagnostic
                 </button>
                 <button
                   type="button"
                   disabled={this.isConfirmed || this.isCorrected}
                   onClick={this.correct}
                 >
-                  Corriger le diagnostique
+                  Corriger le diagnostic
                 </button>
               </div>
             );

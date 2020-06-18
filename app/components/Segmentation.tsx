@@ -58,6 +58,13 @@ export default class Segmentation extends Component<props, state> {
     );
   };
 
+  imageWithoutCache = (srcImageDev: string) => {
+    const srcGen = `file://${__dirname}/${
+      process.env.NODE_ENV === 'production' ? 'app/' : ''
+    }${srcImageDev}?version=${Math.floor(1000000000 * Math.random())}`;
+    return <img src={srcGen} alt={srcGen} />;
+  };
+
   showSegmentationResults = () => {
     let srcs: {
       [id: string]: string;
@@ -74,25 +81,15 @@ export default class Segmentation extends Component<props, state> {
           simpleRoi: `app/python/rois/roi_${i}.png`
         }
       ];
-    const message = `${nbRois}${
-      nbRois > 1 ? ` masses trouvées` : ` seule masse trouvée`
+    const message = `${
+      nbRois > 1 ? `${nbRois} masses trouvées` : `Une seule masse trouvée`
     }`;
     return (
       <div>
         <h3>{message}</h3>
         <h5>Masque global :</h5>
-        <img
-          src={`file://${__dirname}/${
-            process.env.NODE_ENV === 'production' ? 'app/' : ''
-          }python/image_with_contours.png?version=${Math.floor(
-            1000000000 * Math.random()
-          )}`}
-          alt={`file://${__dirname}/${
-            process.env.NODE_ENV === 'production' ? 'app/' : ''
-          }python/image_with_contours.png?version=${Math.floor(
-            1000000000 * Math.random()
-          )}`}
-        />
+        {this.imageWithoutCache('python/image_original_redim.png')}
+        {this.imageWithoutCache('python/image_with_contours.png')}
         {(() => {
           if (nbRois > 1) return <h5>Masses :</h5>;
           return <h5>Masse :</h5>;
