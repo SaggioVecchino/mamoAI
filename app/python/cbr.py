@@ -76,8 +76,8 @@ def update(data):
   with open('app/python/metrics.json', 'w') as f:
     f.write(json.dumps(metrics))
   cbr.addCaseToDB(case, updateInfos=True, persist=True)
-  if(cbr.DB['infos']['counters']['added'] % 5 == 0):
-    nb_deleted = cbr.deleteWorst(nbCases=2, updateInfos=True, persist=True)
+  if(cbr.DB['infos']['counters']['added'] % 10 == 0):
+    nb_deleted = cbr.deleteWorst(nbCases=3, updateInfos=True, persist=True)
 
   print(json.dumps({'metrics': metrics}))
 

@@ -54,8 +54,8 @@ def try_db(nb_tests=100):
     prediction = cbr.classify(case, expert=True, updateInfos=True)[0]
     cbr.addCaseToDB(case, updateInfos=True, persist=True)
     # print(prediction)
-    if(cbr.DB['infos']['counters']['added'] % 5==0):
-      print('deleted ', cbr.deleteWorst(2, updateInfos=True, persist=True))
+    if(cbr.DB['infos']['counters']['added'] % 10==0):
+      print('deleted ', cbr.deleteWorst(3, updateInfos=True, persist=True))
     if prediction == 'MALIGNANT':
       if prediction == real:
         VP+=1
@@ -80,9 +80,9 @@ def try_db(nb_tests=100):
   print('Accuracy={:.2f}%   Precision={:.2f}%   Recall={:.2f}%'.format(100*(VP+VN)/(VP+VN+FP+FN),100*VP/(VP+FP),100*VP/(VP+FN)))
   print('MALIGNANT: {}    BENIGN: {}'.format(metrics['MALIGNANT'], metrics['BENIGN']))
 
-init_db()
+init_db(100)
 cbr.init()
-try_db(150)
+try_db(200)
 
 
 
